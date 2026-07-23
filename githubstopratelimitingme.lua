@@ -14,7 +14,7 @@
 		ESP.Settings.ShowSkeleton = true
 
 		-- To add/remove players manually (automatic via Players service)
-		ESP:AddPlayer(player)
+		ESP:AddPlayer(player)   -- not needed, automatic
 		ESP:RemovePlayer(player)
 
 		-- Cleanup
@@ -291,8 +291,9 @@ function ESP:Render()
 
 	for player, visuals in pairs(self.Cache) do
 		local data = self.PlayersData[player]
+
+		-- If player data is missing, humanoid dead, or health <= 0, hide everything and skip
 		if not data or not data.Humanoid or data.Humanoid.Health <= 0 then
-			-- Hide all
 			visuals.Box.Visible = false
 			visuals.OutlineBox.Visible = false
 			visuals.HealthBar.Visible = false
@@ -301,194 +302,201 @@ function ESP:Render()
 			visuals.NameText.Visible = false
 			visuals.DistanceText.Visible = false
 			for _, line in ipairs(visuals.Bones) do line.Visible = false end
-			 continue
-		end
+		else
+			-- Valid player, proceed with rendering
+			local parts = data.Parts
+			if not parts or next(parts) == nil then
+				-- No parts, hide and skip
+				visuals.Box.Visible = false
+				visuals.OutlineBox.Visible = false
+				visuals.HealthBar.Visible = false
+				visuals.HealthBg.Visible = false
+				visuals.HealthText.Visible = false
+				visuals.NameText.Visible = false
+				visuals.DistanceText.Visible = false
+				for _, line in ipairs(visuals.Bones) do line.Visible = false end
+			else
+				-- Compute bounding box from all parts
+				local minX, minY = math.huge, math.huge
+				local maxX, maxY = -math.huge, -math.huge
+				local onScreen = false
 
-		local parts = data.Parts
-		if not parts or next(parts) == nil then
-			 continue
-		end
+				for partName, part in pairs(parts) do
+					if part:IsA("BasePart") then
+						local size = part.Size
+						local cframe = part.CFrame
+						local ex, ey, ez = size.X/2, size.Y/2, size.Z/2
+						cornerOffsets[1] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey, -ez))
+						cornerOffsets[2] = cframe:PointToWorldSpace(Vector3.new( ex, -ey, -ez))
+						cornerOffsets[3] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey, -ez))
+						cornerOffsets[4] = cframe:PointToWorldSpace(Vector3.new( ex,  ey, -ez))
+						cornerOffsets[5] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey,  ez))
+						cornerOffsets[6] = cframe:PointToWorldSpace(Vector3.new( ex, -ey,  ez))
+						cornerOffsets[7] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey,  ez))
+						cornerOffsets[8] = cframe:PointToWorldSpace(Vector3.new( ex,  ey,  ez))
 
-		-- Compute bounding box from all parts
-		local minX, minY = math.huge, math.huge
-		local maxX, maxY = -math.huge, -math.huge
-		local onScreen = false
-
-		for partName, part in pairs(parts) do
-			if part:IsA("BasePart") then
-				local size = part.Size
-				local cframe = part.CFrame
-				local ex, ey, ez = size.X/2, size.Y/2, size.Z/2
-				cornerOffsets[1] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey, -ez))
-				cornerOffsets[2] = cframe:PointToWorldSpace(Vector3.new( ex, -ey, -ez))
-				cornerOffsets[3] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey, -ez))
-				cornerOffsets[4] = cframe:PointToWorldSpace(Vector3.new( ex,  ey, -ez))
-				cornerOffsets[5] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey,  ez))
-				cornerOffsets[6] = cframe:PointToWorldSpace(Vector3.new( ex, -ey,  ez))
-				cornerOffsets[7] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey,  ez))
-				cornerOffsets[8] = cframe:PointToWorldSpace(Vector3.new( ex,  ey,  ez))
-
-				for i = 1, 8 do
-					local screenPos, visible = camera:WorldToViewportPoint(cornerOffsets[i])
-					if visible then
-						onScreen = true
-						minX = math.min(minX, screenPos.X)
-						minY = math.min(minY, screenPos.Y)
-						maxX = math.max(maxX, screenPos.X)
-						maxY = math.max(maxY, screenPos.Y)
+						for i = 1, 8 do
+							local screenPos, visible = camera:WorldToViewportPoint(cornerOffsets[i])
+							if visible then
+								onScreen = true
+								minX = math.min(minX, screenPos.X)
+								minY = math.min(minY, screenPos.Y)
+								maxX = math.max(maxX, screenPos.X)
+								maxY = math.max(maxY, screenPos.Y)
+							end
+						end
 					end
 				end
-			end
-		end
 
-		if not onScreen then
-			visuals.Box.Visible = false
-			visuals.OutlineBox.Visible = false
-			visuals.HealthBar.Visible = false
-			visuals.HealthBg.Visible = false
-			visuals.HealthText.Visible = false
-			visuals.NameText.Visible = false
-			visuals.DistanceText.Visible = false
-			for _, line in ipairs(visuals.Bones) do line.Visible = false end
-			 continue
-		end
+				-- If not on screen, hide all
+				if not onScreen then
+					visuals.Box.Visible = false
+					visuals.OutlineBox.Visible = false
+					visuals.HealthBar.Visible = false
+					visuals.HealthBg.Visible = false
+					visuals.HealthText.Visible = false
+					visuals.NameText.Visible = false
+					visuals.DistanceText.Visible = false
+					for _, line in ipairs(visuals.Bones) do line.Visible = false end
+				else
+					-- Apply padding
+					local height = maxY - minY
+					local padding = math.clamp(height * 0.05, 1, 8)
+					local boxX = minX - padding
+					local boxY = minY - padding
+					local boxW = (maxX - minX) + 2 * padding
+					local boxH = (maxY - minY) + 2 * padding
 
-		-- Apply padding
-		local height = maxY - minY
-		local padding = math.clamp(height * 0.05, 1, 8)
-		local boxX = minX - padding
-		local boxY = minY - padding
-		local boxW = (maxX - minX) + 2 * padding
-		local boxH = (maxY - minY) + 2 * padding
+					-- ---- Box ----
+					if settings.ShowBox then
+						visuals.Box.Position = Vector2.new(boxX, boxY)
+						visuals.Box.Size = Vector2.new(boxW, boxH)
+						visuals.Box.Color = settings.BoxColor
+						visuals.Box.Thickness = settings.BoxThickness
+						visuals.Box.Visible = true
+					else
+						visuals.Box.Visible = false
+					end
 
-		-- ---- Box ----
-		if settings.ShowBox then
-			visuals.Box.Position = Vector2.new(boxX, boxY)
-			visuals.Box.Size = Vector2.new(boxW, boxH)
-			visuals.Box.Color = settings.BoxColor
-			visuals.Box.Thickness = settings.BoxThickness
-			visuals.Box.Visible = true
-		else
-			visuals.Box.Visible = false
-		end
+					-- ---- Outline ----
+					if settings.ShowOutline then
+						visuals.OutlineBox.Position = visuals.Box.Position
+						visuals.OutlineBox.Size = visuals.Box.Size
+						visuals.OutlineBox.Color = settings.OutlineColor
+						visuals.OutlineBox.Thickness = settings.OutlineThickness
+						visuals.OutlineBox.Visible = true
+					else
+						visuals.OutlineBox.Visible = false
+					end
 
-		-- ---- Outline ----
-		if settings.ShowOutline then
-			visuals.OutlineBox.Position = visuals.Box.Position
-			visuals.OutlineBox.Size = visuals.Box.Size
-			visuals.OutlineBox.Color = settings.OutlineColor
-			visuals.OutlineBox.Thickness = settings.OutlineThickness
-			visuals.OutlineBox.Visible = true
-		else
-			visuals.OutlineBox.Visible = false
-		end
+					-- ---- Name ----
+					if settings.ShowName then
+						local nameSize = settings.NameSize
+						visuals.NameText.Size = nameSize
+						visuals.NameText.Position = Vector2.new(boxX + boxW/2, boxY - nameSize - 2)
+						visuals.NameText.Text = player.DisplayName or player.Name
+						visuals.NameText.Color = settings.NameColor
+						visuals.NameText.Visible = true
+					else
+						visuals.NameText.Visible = false
+					end
 
-		-- ---- Name ----
-		if settings.ShowName then
-			local nameSize = settings.NameSize
-			visuals.NameText.Size = nameSize
-			visuals.NameText.Position = Vector2.new(boxX + boxW/2, boxY - nameSize - 2)
-			visuals.NameText.Text = player.DisplayName or player.Name
-			visuals.NameText.Color = settings.NameColor
-			visuals.NameText.Visible = true
-		else
-			visuals.NameText.Visible = false
-		end
+					-- ---- Health ----
+					if settings.ShowHealth then
+						local health = data.Humanoid.Health
+						local maxHealth = data.Humanoid.MaxHealth
+						local healthPercent = math.clamp(health / maxHealth, 0, 1)
 
-		-- ---- Health ----
-		if settings.ShowHealth then
-			local health = data.Humanoid.Health
-			local maxHealth = data.Humanoid.MaxHealth
-			local healthPercent = math.clamp(health / maxHealth, 0, 1)
+						local barWidth = settings.HealthBarWidth
+						local barHeight = boxH
+						local gap = 4
+						local barX = boxX - barWidth - gap
+						local barY = boxY
+						local fillHeight = barHeight * healthPercent
 
-			local barWidth = settings.HealthBarWidth
-			local barHeight = boxH
-			local gap = 4
-			local barX = boxX - barWidth - gap
-			local barY = boxY
-			local fillHeight = barHeight * healthPercent
+						-- Background
+						visuals.HealthBg.Position = Vector2.new(barX - 1, barY - 1)
+						visuals.HealthBg.Size = Vector2.new(barWidth + 2, barHeight + 2)
+						visuals.HealthBg.Visible = true
 
-			-- Background
-			visuals.HealthBg.Position = Vector2.new(barX - 1, barY - 1)
-			visuals.HealthBg.Size = Vector2.new(barWidth + 2, barHeight + 2)
-			visuals.HealthBg.Visible = true
+						-- Fill
+						visuals.HealthBar.Position = Vector2.new(barX, barY + barHeight - fillHeight)
+						visuals.HealthBar.Size = Vector2.new(barWidth, fillHeight)
+						-- Color gradient: green -> yellow -> red
+						local color
+						if healthPercent > 0.5 then
+							color = Color3.fromRGB(255 * (1 - (healthPercent - 0.5) * 2), 255, 0)
+						else
+							color = Color3.fromRGB(255, 255 * (healthPercent * 2), 0)
+						end
+						visuals.HealthBar.Color = color
+						visuals.HealthBar.Visible = true
 
-			-- Fill
-			visuals.HealthBar.Position = Vector2.new(barX, barY + barHeight - fillHeight)
-			visuals.HealthBar.Size = Vector2.new(barWidth, fillHeight)
-			-- Color gradient: green -> yellow -> red
-			local color
-			if healthPercent > 0.5 then
-				color = Color3.fromRGB(255 * (1 - (healthPercent - 0.5) * 2), 255, 0)
-			else
-				color = Color3.fromRGB(255, 255 * (healthPercent * 2), 0)
-			end
-			visuals.HealthBar.Color = color
-			visuals.HealthBar.Visible = true
+						-- Health text
+						visuals.HealthText.Size = settings.HealthTextSize
+						visuals.HealthText.Position = Vector2.new(barX + barWidth/2, barY + barHeight + gap)
+						visuals.HealthText.Text = string.format("%.0f", health)
+						visuals.HealthText.Color = settings.HealthTextColor
+						visuals.HealthText.Visible = true
+					else
+						visuals.HealthBar.Visible = false
+						visuals.HealthBg.Visible = false
+						visuals.HealthText.Visible = false
+					end
 
-			-- Health text
-			visuals.HealthText.Size = settings.HealthTextSize
-			visuals.HealthText.Position = Vector2.new(barX + barWidth/2, barY + barHeight + gap)
-			visuals.HealthText.Text = string.format("%.0f", health)
-			visuals.HealthText.Color = settings.HealthTextColor
-			visuals.HealthText.Visible = true
-		else
-			visuals.HealthBar.Visible = false
-			visuals.HealthBg.Visible = false
-			visuals.HealthText.Visible = false
-		end
+					-- ---- Distance ----
+					if settings.ShowDistance then
+						local rootPart = data.Character:FindFirstChild("HumanoidRootPart") or data.Character.PrimaryPart
+						if rootPart then
+							local dist = (rootPart.Position - camera.CFrame.Position).Magnitude
+							visuals.DistanceText.Size = 12
+							visuals.DistanceText.Position = Vector2.new(boxX + boxW/2, boxY + boxH + 2)
+							visuals.DistanceText.Text = string.format("%.0fm", dist)
+							visuals.DistanceText.Visible = true
+						else
+							visuals.DistanceText.Visible = false
+						end
+					else
+						visuals.DistanceText.Visible = false
+					end
 
-		-- ---- Distance ----
-		if settings.ShowDistance then
-			local rootPart = data.Character:FindFirstChild("HumanoidRootPart") or data.Character.PrimaryPart
-			if rootPart then
-				local dist = (rootPart.Position - camera.CFrame.Position).Magnitude
-				visuals.DistanceText.Size = 12
-				visuals.DistanceText.Position = Vector2.new(boxX + boxW/2, boxY + boxH + 2)
-				visuals.DistanceText.Text = string.format("%.0fm", dist)
-				visuals.DistanceText.Visible = true
-			else
-				visuals.DistanceText.Visible = false
-			end
-		else
-			visuals.DistanceText.Visible = false
-		end
-
-		-- ---- Skeleton ----
-		if settings.ShowSkeleton and data.Skeleton then
-			local skel = data.Skeleton
-			local boneLines = visuals.Bones
-			local count = 0
-			for idx, conn in ipairs(skel) do
-				local fromPart, toPart = conn[1], conn[2]
-				if fromPart and toPart then
-					local fromPos = fromPart.Position
-					local toPos = toPart.Position
-					local fromScreen, fromVis = camera:WorldToViewportPoint(fromPos)
-					local toScreen, toVis   = camera:WorldToViewportPoint(toPos)
-					if fromVis and toVis then
-						local line = boneLines[idx]
-						if line then
-							line.From = Vector2.new(fromScreen.X, fromScreen.Y)
-							line.To = Vector2.new(toScreen.X, toScreen.Y)
-							line.Color = settings.SkeletonColor
-							line.Thickness = settings.SkeletonThickness
-							line.Visible = true
-							count = count + 1
+					-- ---- Skeleton ----
+					if settings.ShowSkeleton and data.Skeleton then
+						local skel = data.Skeleton
+						local boneLines = visuals.Bones
+						local count = 0
+						for idx, conn in ipairs(skel) do
+							local fromPart, toPart = conn[1], conn[2]
+							if fromPart and toPart then
+								local fromPos = fromPart.Position
+								local toPos = toPart.Position
+								local fromScreen, fromVis = camera:WorldToViewportPoint(fromPos)
+								local toScreen, toVis   = camera:WorldToViewportPoint(toPos)
+								if fromVis and toVis then
+									local line = boneLines[idx]
+									if line then
+										line.From = Vector2.new(fromScreen.X, fromScreen.Y)
+										line.To = Vector2.new(toScreen.X, toScreen.Y)
+										line.Color = settings.SkeletonColor
+										line.Thickness = settings.SkeletonThickness
+										line.Visible = true
+										count = count + 1
+									end
+								end
+							end
+						end
+						-- Hide unused bone lines
+						for i = count + 1, #boneLines do
+							boneLines[i].Visible = false
+						end
+					else
+						for _, line in ipairs(visuals.Bones) do
+							line.Visible = false
 						end
 					end
 				end
 			end
-			-- Hide unused bone lines
-			for i = count + 1, #boneLines do
-				boneLines[i].Visible = false
-			end
-		else
-			for _, line in ipairs(visuals.Bones) do
-				line.Visible = false
-			end
 		end
-
 	end
 end
 
@@ -516,5 +524,11 @@ function ESP:Stop()
 		self:Remove(player)
 	end
 end
+
+-- ========================
+--  AUTO-START (optional)
+-- ========================
+-- Uncomment the line below to start automatically when required:
+-- ESP:Start()
 
 return ESP
