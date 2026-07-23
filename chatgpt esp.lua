@@ -301,12 +301,12 @@ function ESP:Render()
 			visuals.NameText.Visible = false
 			visuals.DistanceText.Visible = false
 			for _, line in ipairs(visuals.Bones) do line.Visible = false end
-			goto continue
+			 continue
 		end
 
 		local parts = data.Parts
 		if not parts or next(parts) == nil then
-			goto continue
+			 continue
 		end
 
 		-- Compute bounding box from all parts
@@ -350,7 +350,7 @@ function ESP:Render()
 			visuals.NameText.Visible = false
 			visuals.DistanceText.Visible = false
 			for _, line in ipairs(visuals.Bones) do line.Visible = false end
-			goto continue
+			 continue
 		end
 
 		-- Apply padding
@@ -489,7 +489,6 @@ function ESP:Render()
 			end
 		end
 
-		::continue::
 	end
 end
 
