@@ -1,26 +1,3 @@
---[[
-	ESP Module (Drawing-based)
-	Draws a fully customizable ESP with outline, box, health bar (left side),
-	health text, name, and skeleton lines.
-
-	Supports both R6 and R15 characters.
-
-	Usage:
-		local ESP = require(path.to.this.module)
-		ESP:Start()  -- begins rendering
-
-		-- Optional: change settings anytime
-		ESP.Settings.BoxColor = Color3.fromRGB(0, 255, 0)
-		ESP.Settings.ShowSkeleton = true
-
-		-- To add/remove players manually (automatic via Players service)
-		ESP:AddPlayer(player)   -- not needed, automatic
-		ESP:RemovePlayer(player)
-
-		-- Cleanup
-		ESP:Stop()
-]]
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
@@ -28,9 +5,6 @@ local Camera = workspace.CurrentCamera
 local ESP = {}
 ESP.__index = ESP
 
--- ========================
---  CONFIGURATION
--- ========================
 ESP.Settings = {
 	BoxColor          = Color3.fromRGB(255, 0, 0),
 	BoxThickness      = 1,
@@ -53,15 +27,9 @@ ESP.Settings = {
 	ShowDistance = false,
 }
 
--- ========================
---  INTERNAL CACHE
--- ========================
-ESP.Cache = {}          -- [Player] = { drawing objects }
-ESP.PlayersData = {}    -- [Player] = { Character, Humanoid, Parts, ... }
+ESP.Cache = {}
+ESP.PlayersData = {}
 
--- ========================
---  HELPER: Drawing Factory
--- ========================
 local function NewDrawing(type, properties)
 	local obj = Drawing.new(type)
 	if type == "Square" then
@@ -84,21 +52,16 @@ local function NewDrawing(type, properties)
 	return obj
 end
 
--- ========================
---  CHARACTER PARSING
--- ========================
--- Define body part names used for bounding and skeleton
 local PART_NAMES = {
 	"Head",
-	"UpperTorso", "LowerTorso", -- R15
-	"Torso",                   -- R6
+	"UpperTorso", "LowerTorso",
+	"Torso",
 	"LeftUpperArm", "LeftLowerArm", "LeftHand",
 	"RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
 	"RightUpperLeg", "RightLowerLeg", "RightFoot",
 }
 
--- Skeleton connections: { fromPart, toPart } (names)
 local SKELETON_CONNECTIONS_R6 = {
 	{"Head", "Torso"},
 	{"Torso", "Left Arm"},
@@ -123,10 +86,8 @@ local SKELETON_CONNECTIONS_R15 = {
 	{"RightLowerLeg", "RightFoot"},
 }
 
--- Determine rig type and return parts table and skeleton connections
 local function GetCharacterParts(character)
 	local parts = {}
-	-- Collect all parts by name
 	for _, name in ipairs(PART_NAMES) do
 		local part = character:FindFirstChild(name)
 		if part and part:IsA("BasePart") then
@@ -134,7 +95,6 @@ local function GetCharacterParts(character)
 		end
 	end
 
-	-- Detect if R6 (has Torso) or R15 (has UpperTorso)
 	local isR15 = parts.UpperTorso and parts.LowerTorso
 	local connections
 	if isR15 then
@@ -143,7 +103,6 @@ local function GetCharacterParts(character)
 		connections = SKELETON_CONNECTIONS_R6
 	end
 
-	-- Build skeleton connection list with actual parts
 	local skeleton = {}
 	for _, conn in ipairs(connections) do
 		local from = parts[conn[1]]
@@ -156,9 +115,6 @@ local function GetCharacterParts(character)
 	return parts, skeleton, isR15
 end
 
--- ========================
---  ESP OBJECTS CREATION
--- ========================
 function ESP:Create(player)
 	if self.Cache[player] then return end
 
@@ -206,7 +162,6 @@ function ESP:Create(player)
 		Bones = {},
 	}
 
-	-- Pre-create skeleton lines (max 20, we can resize later)
 	for i = 1, 20 do
 		objects.Bones[i] = NewDrawing("Line", {
 			Color = self.Settings.SkeletonColor,
@@ -235,13 +190,9 @@ function ESP:Remove(player)
 	self.PlayersData[player] = nil
 end
 
--- ========================
---  UPDATE PLAYER DATA
--- ========================
 function ESP:UpdatePlayerData()
 	local active = {}
 
-	-- Gather all alive players (excluding local)
 	local localPlayer = Players.LocalPlayer
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= localPlayer and player.Character and player.Character.Parent then
@@ -252,14 +203,12 @@ function ESP:UpdatePlayerData()
 		end
 	end
 
-	-- Remove players not active
 	for player in pairs(self.Cache) do
 		if not active[player] then
 			self:Remove(player)
 		end
 	end
 
-	-- Add new players and update data
 	for player in pairs(active) do
 		if not self.Cache[player] then
 			self:Create(player)
@@ -279,9 +228,6 @@ function ESP:UpdatePlayerData()
 	end
 end
 
--- ========================
---  RENDER
--- ========================
 local cornerOffsets = table.create(8)
 
 function ESP:Render()
@@ -292,7 +238,6 @@ function ESP:Render()
 	for player, visuals in pairs(self.Cache) do
 		local data = self.PlayersData[player]
 
-		-- If player data is missing, humanoid dead, or health <= 0, hide everything and skip
 		if not data or not data.Humanoid or data.Humanoid.Health <= 0 then
 			visuals.Box.Visible = false
 			visuals.OutlineBox.Visible = false
@@ -303,10 +248,8 @@ function ESP:Render()
 			visuals.DistanceText.Visible = false
 			for _, line in ipairs(visuals.Bones) do line.Visible = false end
 		else
-			-- Valid player, proceed with rendering
 			local parts = data.Parts
 			if not parts or next(parts) == nil then
-				-- No parts, hide and skip
 				visuals.Box.Visible = false
 				visuals.OutlineBox.Visible = false
 				visuals.HealthBar.Visible = false
@@ -316,7 +259,6 @@ function ESP:Render()
 				visuals.DistanceText.Visible = false
 				for _, line in ipairs(visuals.Bones) do line.Visible = false end
 			else
-				-- Compute bounding box from all parts
 				local minX, minY = math.huge, math.huge
 				local maxX, maxY = -math.huge, -math.huge
 				local onScreen = false
@@ -348,7 +290,6 @@ function ESP:Render()
 					end
 				end
 
-				-- If not on screen, hide all
 				if not onScreen then
 					visuals.Box.Visible = false
 					visuals.OutlineBox.Visible = false
@@ -359,7 +300,6 @@ function ESP:Render()
 					visuals.DistanceText.Visible = false
 					for _, line in ipairs(visuals.Bones) do line.Visible = false end
 				else
-					-- Apply padding
 					local height = maxY - minY
 					local padding = math.clamp(height * 0.05, 1, 8)
 					local boxX = minX - padding
@@ -367,7 +307,6 @@ function ESP:Render()
 					local boxW = (maxX - minX) + 2 * padding
 					local boxH = (maxY - minY) + 2 * padding
 
-					-- ---- Box ----
 					if settings.ShowBox then
 						visuals.Box.Position = Vector2.new(boxX, boxY)
 						visuals.Box.Size = Vector2.new(boxW, boxH)
@@ -378,7 +317,6 @@ function ESP:Render()
 						visuals.Box.Visible = false
 					end
 
-					-- ---- Outline ----
 					if settings.ShowOutline then
 						visuals.OutlineBox.Position = visuals.Box.Position
 						visuals.OutlineBox.Size = visuals.Box.Size
@@ -389,7 +327,6 @@ function ESP:Render()
 						visuals.OutlineBox.Visible = false
 					end
 
-					-- ---- Name ----
 					if settings.ShowName then
 						local nameSize = settings.NameSize
 						visuals.NameText.Size = nameSize
@@ -401,7 +338,6 @@ function ESP:Render()
 						visuals.NameText.Visible = false
 					end
 
-					-- ---- Health ----
 					if settings.ShowHealth then
 						local health = data.Humanoid.Health
 						local maxHealth = data.Humanoid.MaxHealth
@@ -414,15 +350,12 @@ function ESP:Render()
 						local barY = boxY
 						local fillHeight = barHeight * healthPercent
 
-						-- Background
 						visuals.HealthBg.Position = Vector2.new(barX - 1, barY - 1)
 						visuals.HealthBg.Size = Vector2.new(barWidth + 2, barHeight + 2)
 						visuals.HealthBg.Visible = true
 
-						-- Fill
 						visuals.HealthBar.Position = Vector2.new(barX, barY + barHeight - fillHeight)
 						visuals.HealthBar.Size = Vector2.new(barWidth, fillHeight)
-						-- Color gradient: green -> yellow -> red
 						local color
 						if healthPercent > 0.5 then
 							color = Color3.fromRGB(255 * (1 - (healthPercent - 0.5) * 2), 255, 0)
@@ -432,7 +365,6 @@ function ESP:Render()
 						visuals.HealthBar.Color = color
 						visuals.HealthBar.Visible = true
 
-						-- Health text
 						visuals.HealthText.Size = settings.HealthTextSize
 						visuals.HealthText.Position = Vector2.new(barX + barWidth/2, barY + barHeight + gap)
 						visuals.HealthText.Text = string.format("%.0f", health)
@@ -444,7 +376,6 @@ function ESP:Render()
 						visuals.HealthText.Visible = false
 					end
 
-					-- ---- Distance ----
 					if settings.ShowDistance then
 						local rootPart = data.Character:FindFirstChild("HumanoidRootPart") or data.Character.PrimaryPart
 						if rootPart then
@@ -460,7 +391,6 @@ function ESP:Render()
 						visuals.DistanceText.Visible = false
 					end
 
-					-- ---- Skeleton ----
 					if settings.ShowSkeleton and data.Skeleton then
 						local skel = data.Skeleton
 						local boneLines = visuals.Bones
@@ -485,7 +415,6 @@ function ESP:Render()
 								end
 							end
 						end
-						-- Hide unused bone lines
 						for i = count + 1, #boneLines do
 							boneLines[i].Visible = false
 						end
@@ -500,9 +429,6 @@ function ESP:Render()
 	end
 end
 
--- ========================
---  MAIN LOOP
--- ========================
 function ESP:Start()
 	if self._running then return end
 	self._running = true
@@ -519,16 +445,9 @@ function ESP:Stop()
 		self._heartbeat = nil
 	end
 	self._running = false
-	-- Clean all drawings
 	for player in pairs(self.Cache) do
 		self:Remove(player)
 	end
 end
-
--- ========================
---  AUTO-START (optional)
--- ========================
--- Uncomment the line below to start automatically when required:
--- ESP:Start()
 
 return ESP
