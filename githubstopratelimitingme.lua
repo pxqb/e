@@ -415,8 +415,11 @@ function ESP:Render()
 						local nameSize = settings.NameSize
 						visuals.NameText.Size = nameSize
 						visuals.NameText.Position = Vector2.new(boxX + boxW / 2, boxY - nameSize - 2)
-						local dispName = (type(player) == "userdata" or type(player) == "table" or type(player) == "Instance") and (player.DisplayName or player.Name) or tostring(player)
-						visuals.NameText.Text = dispName
+						local pName = (type(player) == "userdata" or type(player) == "table" or type(player) == "Instance") and (player.DisplayName or player.Name) or tostring(player)
+						if not pName or pName == "" or pName == "Label" then
+							pName = "Name"
+						end
+						visuals.NameText.Text = pName
 						visuals.NameText.Color = settings.NameColor
 						visuals.NameText.Visible = true
 					else
