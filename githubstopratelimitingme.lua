@@ -425,7 +425,7 @@ function ESP:Render()
 						local health = data.Humanoid.Health
 						local maxHealth = data.Humanoid.MaxHealth
 						local healthPercent = math.clamp(health / maxHealth, 0, 1)
-						local barWidth = math.clamp(boxW * 0.045, 2, 6)
+						local barWidth = math.clamp(boxW * 0.045, 2, 3)
 						local gap = math.clamp(boxW * 0.015, 1, 4)
 						local barHeight = boxH
 						local barX = boxX - barWidth - gap
@@ -530,5 +530,4 @@ function ESP:Stop()
 		self:Remove(player)
 	end
 end
-
 return ESP
