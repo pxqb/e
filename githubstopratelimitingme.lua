@@ -338,7 +338,7 @@ function ESP:Render()
 						visuals.NameText.Visible = false
 					end
 
-					if settings.ShowHealth then
+					if settings.ShowHealth and data and data.Humanoid then
 						local health = data.Humanoid.Health
 						local maxHealth = data.Humanoid.MaxHealth
 						local healthPercent = math.clamp(health / maxHealth, 0, 1)
@@ -356,6 +356,7 @@ function ESP:Render()
 
 						visuals.HealthBar.Position = Vector2.new(barX, barY + barHeight - fillHeight)
 						visuals.HealthBar.Size = Vector2.new(barWidth, fillHeight)
+
 						local color
 						if healthPercent > 0.5 then
 							color = Color3.fromRGB(255 * (1 - (healthPercent - 0.5) * 2), 255, 0)
@@ -367,7 +368,7 @@ function ESP:Render()
 
 						visuals.HealthText.Size = settings.HealthTextSize
 						visuals.HealthText.Position = Vector2.new(barX + barWidth/2, barY + barHeight + gap)
-						visuals.HealthText.Text = string.format("%.0f", health)
+						visuals.HealthText.Text = tostring(math.floor(health))
 						visuals.HealthText.Color = settings.HealthTextColor
 						visuals.HealthText.Visible = true
 					else
