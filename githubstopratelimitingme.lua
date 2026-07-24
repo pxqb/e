@@ -18,6 +18,7 @@ ESP.Settings = {
 	HealthTextSize = 12,
 	SkeletonColor = Color3.fromRGB(255, 255, 255),
 	SkeletonThickness = 1,
+	DistanceColor = Color3.fromRGB(255, 255, 255),
 
 	ShowBox = true,
 	ShowOutline = true,
@@ -414,7 +415,8 @@ function ESP:Render()
 						local nameSize = settings.NameSize
 						visuals.NameText.Size = nameSize
 						visuals.NameText.Position = Vector2.new(boxX + boxW / 2, boxY - nameSize - 2)
-						visuals.NameText.Text = player.DisplayName or player.Name
+						local dispName = (type(player) == "userdata" or type(player) == "table" or type(player) == "Instance") and (player.DisplayName or player.Name) or tostring(player)
+						visuals.NameText.Text = dispName
 						visuals.NameText.Color = settings.NameColor
 						visuals.NameText.Visible = true
 					else
@@ -462,6 +464,7 @@ function ESP:Render()
 							visuals.DistanceText.Size = 12
 							visuals.DistanceText.Position = Vector2.new(boxX + boxW / 2, boxY + boxH + 2)
 							visuals.DistanceText.Text = string.format("%.0fm", dist)
+							visuals.DistanceText.Color = settings.DistanceColor or Color3.fromRGB(255, 255, 255)
 							visuals.DistanceText.Visible = true
 						else
 							visuals.DistanceText.Visible = false
