@@ -6,23 +6,23 @@ local ESP = {}
 ESP.__index = ESP
 
 ESP.Settings = {
-	BoxColor          = Color3.fromRGB(255, 0, 0),
-	BoxThickness      = 1,
-	OutlineColor      = Color3.fromRGB(0, 0, 0),
-	OutlineThickness  = 2,
-	HealthBarColor    = Color3.fromRGB(0, 255, 0),
-	HealthBarWidth    = 4,
-	NameColor         = Color3.fromRGB(255, 255, 255),
-	NameSize          = 14,
-	HealthTextColor   = Color3.fromRGB(255, 255, 255),
-	HealthTextSize    = 12,
-	SkeletonColor     = Color3.fromRGB(255, 255, 255),
+	BoxColor = Color3.fromRGB(255, 0, 0),
+	BoxThickness = 1,
+	OutlineColor = Color3.fromRGB(0, 0, 0),
+	OutlineThickness = 2,
+	HealthBarColor = Color3.fromRGB(0, 255, 0),
+	HealthBarWidth = 4,
+	NameColor = Color3.fromRGB(255, 255, 255),
+	NameSize = 14,
+	HealthTextColor = Color3.fromRGB(255, 255, 255),
+	HealthTextSize = 12,
+	SkeletonColor = Color3.fromRGB(255, 255, 255),
 	SkeletonThickness = 1,
 
-	ShowBox      = true,
-	ShowOutline  = true,
-	ShowHealth   = true,
-	ShowName     = true,
+	ShowBox = true,
+	ShowOutline = true,
+	ShowHealth = true,
+	ShowName = true,
 	ShowSkeleton = false,
 	ShowDistance = false,
 }
@@ -54,36 +54,102 @@ end
 
 local PART_NAMES = {
 	"Head",
-	"UpperTorso", "LowerTorso",
+	"UpperTorso",
+	"LowerTorso",
 	"Torso",
-	"LeftUpperArm", "LeftLowerArm", "LeftHand",
-	"RightUpperArm", "RightLowerArm", "RightHand",
-	"LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
-	"RightUpperLeg", "RightLowerLeg", "RightFoot",
+	"LeftUpperArm",
+	"LeftLowerArm",
+	"LeftHand",
+	"RightUpperArm",
+	"RightLowerArm",
+	"RightHand",
+	"LeftUpperLeg",
+	"LeftLowerLeg",
+	"LeftFoot",
+	"RightUpperLeg",
+	"RightLowerLeg",
+	"RightFoot",
 }
 
 local SKELETON_CONNECTIONS_R6 = {
-	{"Head", "Torso"},
-	{"Torso", "Left Arm"},
-	{"Torso", "Right Arm"},
-	{"Torso", "Left Leg"},
-	{"Torso", "Right Leg"},
+	{
+		"Head",
+		"Torso"
+	},
+	{
+		"Torso",
+		"Left Arm"
+	},
+	{
+		"Torso",
+		"Right Arm"
+	},
+	{
+		"Torso",
+		"Left Leg"
+	},
+	{
+		"Torso",
+		"Right Leg"
+	},
 }
 local SKELETON_CONNECTIONS_R15 = {
-	{"Head", "UpperTorso"},
-	{"UpperTorso", "LowerTorso"},
-	{"UpperTorso", "LeftUpperArm"},
-	{"LeftUpperArm", "LeftLowerArm"},
-	{"LeftLowerArm", "LeftHand"},
-	{"UpperTorso", "RightUpperArm"},
-	{"RightUpperArm", "RightLowerArm"},
-	{"RightLowerArm", "RightHand"},
-	{"LowerTorso", "LeftUpperLeg"},
-	{"LeftUpperLeg", "LeftLowerLeg"},
-	{"LeftLowerLeg", "LeftFoot"},
-	{"LowerTorso", "RightUpperLeg"},
-	{"RightUpperLeg", "RightLowerLeg"},
-	{"RightLowerLeg", "RightFoot"},
+	{
+		"Head",
+		"UpperTorso"
+	},
+	{
+		"UpperTorso",
+		"LowerTorso"
+	},
+	{
+		"UpperTorso",
+		"LeftUpperArm"
+	},
+	{
+		"LeftUpperArm",
+		"LeftLowerArm"
+	},
+	{
+		"LeftLowerArm",
+		"LeftHand"
+	},
+	{
+		"UpperTorso",
+		"RightUpperArm"
+	},
+	{
+		"RightUpperArm",
+		"RightLowerArm"
+	},
+	{
+		"RightLowerArm",
+		"RightHand"
+	},
+	{
+		"LowerTorso",
+		"LeftUpperLeg"
+	},
+	{
+		"LeftUpperLeg",
+		"LeftLowerLeg"
+	},
+	{
+		"LeftLowerLeg",
+		"LeftFoot"
+	},
+	{
+		"LowerTorso",
+		"RightUpperLeg"
+	},
+	{
+		"RightUpperLeg",
+		"RightLowerLeg"
+	},
+	{
+		"RightLowerLeg",
+		"RightFoot"
+	},
 }
 
 local function GetCharacterParts(character)
@@ -106,9 +172,12 @@ local function GetCharacterParts(character)
 	local skeleton = {}
 	for _, conn in ipairs(connections) do
 		local from = parts[conn[1]]
-		local to   = parts[conn[2]]
+		local to = parts[conn[2]]
 		if from and to then
-			table.insert(skeleton, { from, to })
+			table.insert(skeleton, {
+				from,
+				to
+			})
 		end
 	end
 
@@ -116,7 +185,9 @@ local function GetCharacterParts(character)
 end
 
 function ESP:Create(player)
-	if self.Cache[player] then return end
+	if self.Cache[player] then
+		return
+	end
 
 	local objects = {
 		OutlineBox = NewDrawing("Square", {
@@ -179,10 +250,14 @@ function ESP:Remove(player)
 		for _, obj in pairs(objects) do
 			if type(obj) == "table" then
 				for _, line in ipairs(obj) do
-					pcall(function() line:Remove() end)
+					pcall(function()
+						line:Remove()
+					end)
 				end
 			else
-				pcall(function() obj:Remove() end)
+				pcall(function()
+					obj:Remove()
+				end)
 			end
 		end
 		self.Cache[player] = nil
@@ -233,7 +308,9 @@ local cornerOffsets = table.create(8)
 function ESP:Render()
 	local settings = self.Settings
 	local camera = Camera
-	if not camera then return end
+	if not camera then
+		return
+	end
 
 	for player, visuals in pairs(self.Cache) do
 		local data = self.PlayersData[player]
@@ -246,7 +323,9 @@ function ESP:Render()
 			visuals.HealthText.Visible = false
 			visuals.NameText.Visible = false
 			visuals.DistanceText.Visible = false
-			for _, line in ipairs(visuals.Bones) do line.Visible = false end
+			for _, line in ipairs(visuals.Bones) do
+				line.Visible = false
+			end
 		else
 			local parts = data.Parts
 			if not parts or next(parts) == nil then
@@ -257,25 +336,27 @@ function ESP:Render()
 				visuals.HealthText.Visible = false
 				visuals.NameText.Visible = false
 				visuals.DistanceText.Visible = false
-				for _, line in ipairs(visuals.Bones) do line.Visible = false end
+				for _, line in ipairs(visuals.Bones) do
+					line.Visible = false
+				end
 			else
 				local minX, minY = math.huge, math.huge
-				local maxX, maxY = -math.huge, -math.huge
+				local maxX, maxY = - math.huge, - math.huge
 				local onScreen = false
 
 				for partName, part in pairs(parts) do
 					if part:IsA("BasePart") then
 						local size = part.Size
 						local cframe = part.CFrame
-						local ex, ey, ez = size.X/2, size.Y/2, size.Z/2
-						cornerOffsets[1] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey, -ez))
-						cornerOffsets[2] = cframe:PointToWorldSpace(Vector3.new( ex, -ey, -ez))
-						cornerOffsets[3] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey, -ez))
-						cornerOffsets[4] = cframe:PointToWorldSpace(Vector3.new( ex,  ey, -ez))
-						cornerOffsets[5] = cframe:PointToWorldSpace(Vector3.new(-ex, -ey,  ez))
-						cornerOffsets[6] = cframe:PointToWorldSpace(Vector3.new( ex, -ey,  ez))
-						cornerOffsets[7] = cframe:PointToWorldSpace(Vector3.new(-ex,  ey,  ez))
-						cornerOffsets[8] = cframe:PointToWorldSpace(Vector3.new( ex,  ey,  ez))
+						local ex, ey, ez = size.X / 2, size.Y / 2, size.Z / 2
+						cornerOffsets[1] = cframe:PointToWorldSpace(Vector3.new(- ex, - ey, - ez))
+						cornerOffsets[2] = cframe:PointToWorldSpace(Vector3.new( ex, - ey, - ez))
+						cornerOffsets[3] = cframe:PointToWorldSpace(Vector3.new(- ex, ey, - ez))
+						cornerOffsets[4] = cframe:PointToWorldSpace(Vector3.new( ex, ey, - ez))
+						cornerOffsets[5] = cframe:PointToWorldSpace(Vector3.new(- ex, - ey, ez))
+						cornerOffsets[6] = cframe:PointToWorldSpace(Vector3.new( ex, - ey, ez))
+						cornerOffsets[7] = cframe:PointToWorldSpace(Vector3.new(- ex, ey, ez))
+						cornerOffsets[8] = cframe:PointToWorldSpace(Vector3.new( ex, ey, ez))
 
 						for i = 1, 8 do
 							local screenPos, visible = camera:WorldToViewportPoint(cornerOffsets[i])
@@ -298,7 +379,9 @@ function ESP:Render()
 					visuals.HealthText.Visible = false
 					visuals.NameText.Visible = false
 					visuals.DistanceText.Visible = false
-					for _, line in ipairs(visuals.Bones) do line.Visible = false end
+					for _, line in ipairs(visuals.Bones) do
+						line.Visible = false
+					end
 				else
 					local height = maxY - minY
 					local padding = math.clamp(height * 0.05, 1, 8)
@@ -330,7 +413,7 @@ function ESP:Render()
 					if settings.ShowName then
 						local nameSize = settings.NameSize
 						visuals.NameText.Size = nameSize
-						visuals.NameText.Position = Vector2.new(boxX + boxW/2, boxY - nameSize - 2)
+						visuals.NameText.Position = Vector2.new(boxX + boxW / 2, boxY - nameSize - 2)
 						visuals.NameText.Text = player.DisplayName or player.Name
 						visuals.NameText.Color = settings.NameColor
 						visuals.NameText.Visible = true
@@ -342,21 +425,17 @@ function ESP:Render()
 						local health = data.Humanoid.Health
 						local maxHealth = data.Humanoid.MaxHealth
 						local healthPercent = math.clamp(health / maxHealth, 0, 1)
-
-						local barWidth = settings.HealthBarWidth
+						local barWidth = math.clamp(boxW * 0.045, 2, 6)
+						local gap = math.clamp(boxW * 0.015, 1, 4)
 						local barHeight = boxH
-						local gap = 4
 						local barX = boxX - barWidth - gap
 						local barY = boxY
 						local fillHeight = barHeight * healthPercent
-
 						visuals.HealthBg.Position = Vector2.new(barX - 1, barY - 1)
 						visuals.HealthBg.Size = Vector2.new(barWidth + 2, barHeight + 2)
 						visuals.HealthBg.Visible = true
-
 						visuals.HealthBar.Position = Vector2.new(barX, barY + barHeight - fillHeight)
 						visuals.HealthBar.Size = Vector2.new(barWidth, fillHeight)
-
 						local color
 						if healthPercent > 0.5 then
 							color = Color3.fromRGB(255 * (1 - (healthPercent - 0.5) * 2), 255, 0)
@@ -365,9 +444,8 @@ function ESP:Render()
 						end
 						visuals.HealthBar.Color = color
 						visuals.HealthBar.Visible = true
-
 						visuals.HealthText.Size = settings.HealthTextSize
-						visuals.HealthText.Position = Vector2.new(barX + barWidth/2, barY + barHeight + gap)
+						visuals.HealthText.Position = Vector2.new(barX + barWidth / 2, barY + barHeight + gap)
 						visuals.HealthText.Text = tostring(math.floor(health))
 						visuals.HealthText.Color = settings.HealthTextColor
 						visuals.HealthText.Visible = true
@@ -382,7 +460,7 @@ function ESP:Render()
 						if rootPart then
 							local dist = (rootPart.Position - camera.CFrame.Position).Magnitude
 							visuals.DistanceText.Size = 12
-							visuals.DistanceText.Position = Vector2.new(boxX + boxW/2, boxY + boxH + 2)
+							visuals.DistanceText.Position = Vector2.new(boxX + boxW / 2, boxY + boxH + 2)
 							visuals.DistanceText.Text = string.format("%.0fm", dist)
 							visuals.DistanceText.Visible = true
 						else
@@ -402,7 +480,7 @@ function ESP:Render()
 								local fromPos = fromPart.Position
 								local toPos = toPart.Position
 								local fromScreen, fromVis = camera:WorldToViewportPoint(fromPos)
-								local toScreen, toVis   = camera:WorldToViewportPoint(toPos)
+								local toScreen, toVis = camera:WorldToViewportPoint(toPos)
 								if fromVis and toVis then
 									local line = boneLines[idx]
 									if line then
@@ -416,7 +494,7 @@ function ESP:Render()
 								end
 							end
 						end
-						for i = count + 1, #boneLines do
+						for i = count + 1, # boneLines do
 							boneLines[i].Visible = false
 						end
 					else
@@ -431,7 +509,9 @@ function ESP:Render()
 end
 
 function ESP:Start()
-	if self._running then return end
+	if self._running then
+		return
+	end
 	self._running = true
 
 	self._heartbeat = RunService.RenderStepped:Connect(function()
